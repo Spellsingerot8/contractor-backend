@@ -1,52 +1,31 @@
 from flask import Flask, request, jsonify
-import openai
-import os
 
 app = Flask(__name__)
 
-openai.api_key = os.environ.get("OPENAI_API_KEY")
-
-def call_gpt(prompt):
-    response = openai.ChatCompletion.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=800
-    )
-    return response.choices[0].message["content"]
-
 @app.route('/')
 def home():
-    return "Contractor-in-a-Can Backend is Running!"
+    return jsonify({"message": "Contractor-in-a-Can backend is running!"})
 
-@app.route('/contractor-tool', methods=['POST'])
-def contractor_tool():
+@app.route('/flooring-estimate', methods=['POST'])
+def flooring_estimate():
     data = request.json
-    tool = data.get("tool", "")
-    width = data.get("width", 0)
-    length = data.get("length", 0)
-    height = data.get("height", 8)
-    quality = data.get("quality", "mid")
-    exclusions = data.get("exclusions", 0)
+    sqft = data.get('square_feet', 0)
+    zip_code = data.get('zip', '00000')
 
-    area = (width * length) - exclusions
+    # Sample price range (adjust later based on zip)
+    material_price = 4.0  # per square foot
+    labor_price = 2.5     # per square foot
 
-    prompt = f"""
-    You are a professional {tool} estimator.
-    The room is {width} ft by {length} ft, with {height} ft ceilings.
-    The user chose {quality} quality materials.
-    Exclude {exclusions} sq ft for doors/windows.
-
-    Estimate the materials needed and total cost (materials + labor).
-    Be specific with units (e.g., drywall sheets, gallons of paint, sq ft of flooring).
-    """
-
-    result = call_gpt(prompt)
+    material_cost = sqft * material_price
+    labor_cost = sqft * labor_price
+    total_cost = material_cost + labor_cost
 
     return jsonify({
-        "tool": tool,
-        "area": area,
-        "response": result
+        "square_feet": sqft,
+        "material_cost": round(material_cost, 2),
+        "labor_cost": round(labor_cost, 2),
+        "total_cost": round(total_cost, 2)
     })
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+if __name__ == '__main__':
+    app.run()
